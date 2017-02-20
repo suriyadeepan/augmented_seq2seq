@@ -5,3 +5,4 @@ __pycache__
 *.pkl
 *.tar.gz
 ckpt/
+*.ipynb
