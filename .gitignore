@@ -4,5 +4,4 @@ __pycache__
 *.npy
 *.pkl
 *.tar.gz
-
-
+ckpt/
