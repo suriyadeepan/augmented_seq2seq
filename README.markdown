@@ -16,3 +16,4 @@
 2. [Neural Machine Translation by Jointly Learning to Align and Translate](https://arxiv.org/abs/1409.0473)
 3. [End-to-End Memory Networks](https://arxiv.org/abs/1503.08895)
 4. [Building End-To-End Dialogue Systems Using Generative Hierarchical Neural Network Models](https://arxiv.org/abs/1507.04808)
+5. [Advanced Seq2seq in tensorflow](https://github.com/ematvey/tensorflow-seq2seq-tutorials)
