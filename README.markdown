@@ -1,5 +1,7 @@
 # Augmented Seq2seq
 
+![](https://img.shields.io/badge/python-3.6-brightgreen.svg) ![](https://img.shields.io/badge/tensorflow-1.0.0-green.svg) ![](https://img.shields.io/badge/nltk-3.2.2-yellowgreen.svg)
+
 - [ ] Vanilla Seq2seq
 - [ ] Language Modeling with encoder
 - [ ] Bidirectional encoder
