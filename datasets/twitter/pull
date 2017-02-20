@@ -1,0 +1,4 @@
+#!/bin/bash
+
+wget -c https://raw.githubusercontent.com/suriyadeepan/practical_seq2seq/master/datasets/twitter/seq2seq.twitter.tar.gz
+tar -xvzf seq2seq.twitter.tar.gz
