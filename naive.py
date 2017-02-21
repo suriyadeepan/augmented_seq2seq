@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
+from datasets.twitter import data
+from datasets.twitter import data_utils
 
 class seq2seq(object):
 
@@ -40,11 +42,12 @@ class seq2seq(object):
             # stack cells
             stacked_lstm = tf.contrib.rnn.MultiRNNCell([basic_cell]*num_layers, state_is_tuple=True)
 
-            with tf.variable_scope('enc-dec') as scope:
+            with tf.variable_scope('encoder') as scope:
                 # define encoder
                 enc_op, enc_context = tf.nn.dynamic_rnn(cell=stacked_lstm, dtype=tf.float32, 
                                                   inputs=enc_inputs)
-                scope.reuse_variables()
+
+            with tf.variable_scope('decoder') as scope:
                 # define decoder 
                 dec_op, _ = tf.nn.dynamic_rnn(cell=stacked_lstm, dtype=tf.float32,
                                               initial_state= enc_context,
@@ -123,8 +126,26 @@ class seq2seq(object):
                 print(f'loss at {j} : {mean_loss/n}')
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
         except KeyboardInterrupt:
-            print('\n>> Interrupted by user at iteration {j}')
+            print(f'\n>> Interrupted by user at iteration {j}')
 
 
-#if __name__ == '__main__':
-    
+if __name__ == '__main__':
+    #
+    # gather data
+    metadata, idx_q, idx_a = data.load_data(PATH='datasets/twitter/')
+    # split data
+    (trainX, trainY), (testX, testY), (validX, validY) = data_utils.split_dataset(idx_q, idx_a)
+    #
+    # prepare train set generator
+    #  set batch_size
+    batch_size = 16
+    trainset = data_utils.rand_batch_gen(trainX, trainY, batch_size)
+
+    ###
+    # infer vocab size
+    vocab_size = len(metadata['idx2w'])  
+    #
+    # create a model
+    model = seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3)
+    # train
+    model.train(trainset, n=1000)
