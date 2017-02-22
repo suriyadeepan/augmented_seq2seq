@@ -3,8 +3,8 @@
 ![](https://img.shields.io/badge/status-wip-red.svg) ![](https://img.shields.io/badge/python-3.6-brightgreen.svg) ![](https://img.shields.io/badge/tensorflow-1.0.0-green.svg) ![](https://img.shields.io/badge/nltk-3.2.2-yellowgreen.svg)
 
 - [x] [Vanilla Seq2seq](/vanilla.py)
-- [x] [Conditioning decoder on external context](/contextual_seq2seq.py)
-- [ ] Language Modeling with encoder
+- [x] [Conditioning decoder on external context](/contextual.py)
+- [x] [Language Modeling with encoder](/enc_langmodel.py)
 - [ ] Bidirectional encoder
 - [ ] RNNSearch : Soft Alignment
 - [ ] Memory augmentation
