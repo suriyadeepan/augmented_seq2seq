@@ -238,4 +238,4 @@ if __name__ == '__main__':
     # create a model
     model = contextual_seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3, ext_context_size=20)
     # train
-    model.train(trainset, testset, n=20)
+    model.train(trainset, testset, n=1000)
