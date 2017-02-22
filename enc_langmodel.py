@@ -153,7 +153,7 @@ class enc_lm_seq2seq(object):
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
-                testloss = sess.run([self.loss], 
+                testloss = sess.run([self.dec_loss], 
                         feed_dict = fetch_dict(testset, keep_prob=1.)
                         )
                 print(f'test loss : {testloss}')
@@ -208,7 +208,7 @@ class enc_lm_seq2seq(object):
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
-                testloss = sess.run([self.loss], 
+                testloss = sess.run([self.dec_loss], 
                         feed_dict = fetch_dict(testset, keep_prob=1.)
                         )
                 print(f'test loss : {testloss}')
