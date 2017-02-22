@@ -36,11 +36,11 @@ class contextual_seq2seq(object):
 
             
             # project ext_context
-            M = tf.get_variable('M', shape=[ext_context_size, state_size], 
+            Uc = tf.get_variable('Uc', shape=[2, num_layers, ext_context_size, state_size], 
                                 initializer=tf.contrib.layers.xavier_initializer())
-            be = tf.get_variable('be', shape=[state_size], 
+            bc = tf.get_variable('bc', shape=[2, num_layers, state_size], 
                                  initializer=tf.constant_initializer(0.))
-            ext_context = tf.matmul(ext_context_, M) + be
+            #ext_context = tf.matmul(ext_context_, M) + be
 
 
             # define lstm cell for encoder
@@ -100,8 +100,8 @@ class contextual_seq2seq(object):
                 next_cell_state = []
                 for layer in range(num_layers):
                     next_cell_state.append(tf.contrib.rnn.LSTMStateTuple( 
-                            c = cell_state[layer].c + ext_context, 
-                            h = cell_state[layer].h + ext_context
+                            c = cell_state[layer].c + tf.matmul(ext_context_, Uc[0][layer]) + bc[0][layer],
+                            h = cell_state[layer].h + tf.matmul(ext_context_, Uc[1][layer]) + bc[1][layer],
                             ))
 
                 next_cell_state = tuple(next_cell_state)
