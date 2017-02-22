@@ -18,6 +18,7 @@
 4. [Building End-To-End Dialogue Systems Using Generative Hierarchical Neural Network Models](https://arxiv.org/abs/1507.04808)
 5. [Advanced Seq2seq in tensorflow](https://github.com/ematvey/tensorflow-seq2seq-tutorials)
 6. [Beam Search](https://github.com/tensorflow/tensorflow/issues/654)
+7. [Multi-task Learning in tensorflow](http://www.kdnuggets.com/2016/07/multi-task-learning-tensorflow-part-1.html)
 
 
 ## Credits
