@@ -87,10 +87,10 @@ class seq2seq(object):
         # build graph
         __graph__()
 
-    def train(self, trainset, epochs=100, n=100):
+    def train(self, trainset, testset, epochs=100, n=100):
 
-        def fetch_dict(keep_prob=0.5):
-            bx, by = trainset.__next__()
+        def fetch_dict(datagen, keep_prob=0.5):
+            bx, by = datagen.__next__()
             by_dec = np.zeros_like(by).T
             by_dec[1:] = by.T[:-1]
             by_dec = by_dec.T
@@ -119,12 +119,19 @@ class seq2seq(object):
                 mean_loss = 0
                 for i in range(n):
                     _, l = sess.run([self.train_op, self.loss], 
-                            feed_dict = fetch_dict() 
+                            feed_dict = fetch_dict(trainset) 
                             )
                     mean_loss += l
 
-                print(f'loss at {j} : {mean_loss/n}')
+                print(f'>> [{j}] train loss at : {mean_loss/n}')
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
+                #
+                # evaluate
+                testloss = sess.run([self.loss], 
+                        feed_dict = fetch_dict(testset, keep_prob=1.)
+                        )
+                print(f'test loss : {testloss}')
+ 
         except KeyboardInterrupt:
             print(f'\n>> Interrupted by user at iteration {j}')
 
@@ -140,12 +147,13 @@ if __name__ == '__main__':
     #  set batch_size
     batch_size = 16
     trainset = data_utils.rand_batch_gen(trainX, trainY, batch_size)
+    testset = data_utils.rand_batch_gen(testX, testY, batch_size=1024)
 
     ###
     # infer vocab size
-    vocab_size = len(metadata['idx2w'])  
+    vocab_size = len(metadata['idx2w'])
     #
     # create a model
     model = seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3)
     # train
-    model.train(trainset, n=1000)
+    model.train(trainset, testset, n=1000)
