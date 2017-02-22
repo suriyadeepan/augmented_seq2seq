@@ -109,9 +109,6 @@ class contextual_seq2seq(object):
                 elements_finished = (time >= dec_inputs_length_)
                 finished = tf.reduce_all(elements_finished)
 
-                def padded_next_input():
-                    return PAD
-                    
                 def search_for_next_input():
                     output = tf.matmul(cell_output, V) + bo
                     prediction = tf.argmax(output, axis=1)
@@ -122,13 +119,12 @@ class contextual_seq2seq(object):
 
                 next_loop_state = None
 
-                result = (elements_finished, 
+                return (elements_finished, 
                         next_input, 
                         next_cell_state,
                         emit_output,
                         next_loop_state)
                 
-                return result
 
             ###
             # define the decoder with raw_rnn <- loop_fn, loop_fn_initial
