@@ -1,6 +1,6 @@
 # Augmented Seq2seq
 
-![](https://img.shields.io/badge/python-3.6-brightgreen.svg) ![](https://img.shields.io/badge/tensorflow-1.0.0-green.svg) ![](https://img.shields.io/badge/nltk-3.2.2-yellowgreen.svg)
+![](https://img.shields.io/badge/python-3-brightgreen.svg) ![](https://img.shields.io/badge/tensorflow-1.0.0-green.svg) ![](https://img.shields.io/badge/nltk-3.2.2-yellowgreen.svg)
 
 - [x] [Vanilla Seq2seq](/vanilla.py)
 - [x] [Conditioning decoder on external context](/contextual.py)

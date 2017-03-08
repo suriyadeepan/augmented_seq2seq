@@ -210,17 +210,17 @@ class bienc_seq2seq(object):
                             )
                     mean_loss += l
 
-                print(f'>> [{j}] train loss at : {mean_loss/n}')
+                print('>> [{j}] train loss at : {}'.format(mean_loss/n))
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
                 testloss = sess.run([self.loss], 
                         feed_dict = fetch_dict(testset, keep_prob=1.)
                         )
-                print(f'test loss : {testloss}')
+                print('test loss : {}'.format(testloss))
  
         except KeyboardInterrupt:
-            print(f'\n>> Interrupted by user at iteration {j}')
+            print('\n>> Interrupted by user at iteration {}'.format(j))
 
 
 if __name__ == '__main__':
