@@ -1,35 +1,19 @@
-EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz ' # space is included in whitelist
-EN_BLACKLIST = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~\''
-
 FILENAME = 'sequences.csv'
+VOCAB_SIZE = None
+UNK = 'UNK'
 
-limit = {
-        'maxq' : 20,
-        'minq' : 0,
-        'maxa' : 20,
-        'mina' : 3
-        }
+POS_TAGS = { 'CC' : '<CC>', 'CD' : '<CD>', 'DT' : '<DT>', 'EX' : '<EX>', 'FW' : '<FW>', 'IN' : '<IN>', 'JJ' : '<JJ>', 'JJR' : '<JJR>', 'JJS' : '<JJS>', 'LS' : '<LS>', 'MD' : '<MD>', 'NN' : '<NN>', 'NNS' : '<NNS>', 'NNP' : '<NNP>', 'NNPS' : '<NNPS>', 'PDT' : '<PDT>', 'POS' : '<POS>', 'PRP' : '<PRP>', 'PRP' : '<PRP>', 'RB' : '<RB>', 'RBR' : '<RBR>', 'RBS' : '<RBS>', 'RP' : '<RP>', 'SYM' : '<SYM>', 'TO' : '<TO>', 'UH' : '<UH>', 'VB' : '<VB>', 'VBD' : '<VBD>', 'VBG' : '<VBG>', 'VBN' : '<VBN>', 'VBP' : '<VBP>', 'VBZ' : '<VBZ>', 'WDT' : '<WDT>', 'WP' : '<WP>', 'WP$' : '<WP$>', 'WRB' : '<WRB>' }
 
-UNK = 'unk'
-VOCAB_SIZE = 6000
 
 # imports : in the order of usage
-import spellcheck
+import itertools
+import nltk
 
 import random
 import sys
 
-import nltk
-import itertools
-from collections import defaultdict
-
-import numpy as np
-
 import pickle
 
-
-def ddefault():
-    return 1
 
 '''
  read lines from file
@@ -40,7 +24,7 @@ def read_lines(filename):
     return fix_win_encode(open(filename).read()).split('\n')[:-1]
 
 def fix_win_encode(text):
-    return text.replace('\x92', "'")
+    return text.replace('\x92', "'").replace('\x97', ' ').replace('\x91', '').replace('_b_','').replace('*','').replace('\x93','')
 
 
 '''
@@ -52,21 +36,28 @@ def split_row(lines):
     q,r,respect = [], [], []
     for line in lines:
         line = line.split('|')
-        r.append(line[0].strip())
-        q.append(line[-1].strip())
+        r.append(split_and_tag(line[0]))
+        q.append(split_and_tag(line[-1]))
         respect.append(line[1])
     return q,r,respect
 
 
 '''
- remove anything that isn't in the vocabulary
-    return str(pure ta/en)
-
+ split sentences into words and tags with nltk
+  replace foreign words and numbers 
+   into <FW> and <CD> tags
+    
 '''
-def filter_line(line, whitelist):
-    return ''.join([ ch for ch in line if ch in whitelist ])
-
-
+def split_and_tag(line):
+    wtags = nltk.pos_tag(nltk.word_tokenize(line.strip()))
+    words = []
+    for w,t in wtags:
+        if t == 'CD' or t == 'FW':
+            w = t
+        words.append(w)
+    return words
+    
+    
 '''
  read list of words, create index to word,
   word to index dictionaries
@@ -78,65 +69,29 @@ def index_(tokenized_sentences, vocab_size):
     freq_dist = nltk.FreqDist(itertools.chain(*tokenized_sentences))
     # get vocabulary of 'vocab_size' most used words
     vocab = freq_dist.most_common(vocab_size)
+    vocab = [ item for item in vocab if item[1] > 1 ]
     # index2word
-    index2word = ['_'] + [UNK] + [ x[0] for x in vocab ]
+    index2word = ['_'] + ['UNK'] + list(POS_TAGS.keys()) + [ x[0] for x in vocab ]
     # word2index
     word2index = dict([(w,i) for i,w in enumerate(index2word)] )
     return index2word, word2index, freq_dist
 
 
 '''
- filter too long and too short sequences
-    return tuple( filtered_ta, filtered_en )
-
-'''
-def filter_data(sequences):
-    filtered_q, filtered_a = [], []
-    raw_data_len = len(sequences)//2
-
-    for i in range(0, len(sequences), 2):
-        qlen, alen = len(sequences[i].split(' ')), len(sequences[i+1].split(' '))
-        if qlen >= limit['minq'] and qlen <= limit['maxq']:
-            if alen >= limit['mina'] and alen <= limit['maxa']:
-                filtered_q.append(sequences[i])
-                filtered_a.append(sequences[i+1])
-
-    # print the fraction of the original data, filtered
-    filt_data_len = len(filtered_q)
-    filtered = int((raw_data_len - filt_data_len)*100/raw_data_len)
-    print(str(filtered) + '% filtered from original data')
-
-    return filtered_q, filtered_a
-
-
-
-
-
-'''
- create the final dataset : 
-  - convert list of items to arrays of indices
-  - add zero padding
-      return ( [array_en([indices]), array_ta([indices]) )
+ There will be no zero padding!
  
 '''
-def zero_pad(qtokenized, atokenized, w2idx):
+def encode(q, r, w2idx):
     # num of rows
-    data_len = len(qtokenized)
+    data_len = len(q)
 
-    # numpy arrays to store indices
-    idx_q = np.zeros([data_len, limit['maxq']], dtype=np.int32) 
-    idx_a = np.zeros([data_len, limit['maxa']], dtype=np.int32)
+    idx_q, idx_r = [], []
 
     for i in range(data_len):
-        q_indices = pad_seq(qtokenized[i], w2idx, limit['maxq'])
-        a_indices = pad_seq(atokenized[i], w2idx, limit['maxa'])
+        idx_q.append(encode_seq(q[i], w2idx))
+        idx_r.append(encode_seq(r[i], w2idx))
 
-        #print(len(idx_q[i]), len(q_indices))
-        #print(len(idx_a[i]), len(a_indices))
-        idx_q[i] = np.array(q_indices)
-        idx_a[i] = np.array(a_indices)
-
-    return idx_q, idx_a
+    return idx_q, idx_r
 
 
 '''
@@ -145,14 +100,18 @@ def zero_pad(qtokenized, atokenized, w2idx):
     return [list of indices]
 
 '''
-def pad_seq(seq, lookup, maxlen):
+def encode_seq(seq, lookup):
     indices = []
     for word in seq:
         if word in lookup:
             indices.append(lookup[word])
         else:
-            indices.append(lookup[UNK])
-    return indices + [0]*(maxlen - len(seq))
+            tag = nltk.pos_tag([word])[-1][-1]
+            if tag in lookup:
+                indices.append(lookup[tag])
+            else:
+                indices.append(lookup[UNK])
+    return indices
 
 
 def process_data():
@@ -178,54 +137,25 @@ def process_data():
 
     ##
     # [1] Spell Check
-    #q = [ spellcheck.correction(qi) for qi in q ]
-    #a = [ spellcheck.correction(ai) for ai in a ]
-
-    ##
+    #
     # [2] POS tagging
-    print('POS tagging example :\nsentence : {}\ntagging : {}'.
-            format(q[121], nltk.pos_tag(nltk.word_tokenize(q[121]))))
-
-
-    '''
-    # filter out unnecessary characters
-    print('\n>> Filter lines')
-    lines = [ filter_line(line, EN_WHITELIST) for line in lines ]
-    print(lines[121:125])
-
-    # filter out too long or too short sequences
-    print('\n>> 2nd layer of filtering')
-    qlines, alines = filter_data(lines)
-    print('\nq : {0} ; a : {1}'.format(qlines[60], alines[60]))
-    print('\nq : {0} ; a : {1}'.format(qlines[61], alines[61]))
-
-
-    # convert list of [lines of text] into list of [list of words ]
-    print('\n>> Segment lines into words')
-    qtokenized = [ wordlist.split(' ') for wordlist in qlines ]
-    atokenized = [ wordlist.split(' ') for wordlist in alines ]
-    print('\n:: Sample from segmented list of words')
-    print('\nq : {0} ; a : {1}'.format(qtokenized[60], atokenized[60]))
-    print('\nq : {0} ; a : {1}'.format(qtokenized[61], atokenized[61]))
-
 
     # indexing -> idx2w, w2idx : en/ta
     print('\n >> Index words')
-    idx2w, w2idx, freq_dist = index_( qtokenized + atokenized, vocab_size=VOCAB_SIZE)
+    idx2w, w2idx, freq_dist = index_(q+r, vocab_size=None)
 
-    print('\n >> Zero Padding')
-    idx_q, idx_a = zero_pad(qtokenized, atokenized, w2idx)
+    idx_q, idx_r = encode(q, r, w2idx)
 
-    print('\n >> Save numpy arrays to disk')
-    # save them
-    np.save('idx_q.npy', idx_q)
-    np.save('idx_a.npy', idx_a)
+    data = {
+        'q' : idx_q, 
+        'r' : idx_r, 
+        'respect' : respect
+            }
 
     # let us now save the necessary dictionaries
     metadata = {
             'w2idx' : w2idx,
             'idx2w' : idx2w,
-            'limit' : limit,
             'freq_dist' : freq_dist
                 }
 
@@ -233,16 +163,19 @@ def process_data():
     with open('metadata.pkl', 'wb') as f:
         pickle.dump(metadata, f)
 
-    '''
+    with open('data.pkl', 'wb') as f:
+        pickle.dump(data, f)
+
+
 
 def load_data(PATH=''):
     # read data control dictionaries
     with open(PATH + 'metadata.pkl', 'rb') as f:
         metadata = pickle.load(f)
-    # read numpy arrays
-    idx_q = np.load(PATH + 'idx_q.npy')
-    idx_a = np.load(PATH + 'idx_a.npy')
-    return metadata, idx_q, idx_a
+    with open(PATH + 'data.pkl', 'rb') as f:
+        data = pickle.load(f)
+
+    return data, metadata
 
 
 if __name__ == '__main__':
