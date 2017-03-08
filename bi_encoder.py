@@ -4,6 +4,8 @@ import numpy as np
 from datasets.twitter import data
 from datasets.twitter import data_utils
 
+import sys
+
 class bienc_seq2seq(object):
 
     def __init__(self, state_size, vocab_size, num_layers,
@@ -209,6 +211,8 @@ class bienc_seq2seq(object):
                             feed_dict = fetch_dict(trainset) 
                             )
                     mean_loss += l
+                    sys.stdout.write('[{}/{}]'.format(i,n))
+                    sys.stdout.flush()
 
                 print('>> [{j}] train loss at : {}'.format(mean_loss/n))
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
@@ -232,7 +236,7 @@ if __name__ == '__main__':
     #
     # prepare train set generator
     #  set batch_size
-    batch_size = 16
+    batch_size = 128
     trainset = data_utils.rand_batch_gen(trainX, trainY, batch_size)
     testset = data_utils.rand_batch_gen(testX, testY, batch_size=1024)
 
@@ -243,4 +247,4 @@ if __name__ == '__main__':
     # create a model
     model = bienc_seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3)
     # train
-    model.train(trainset, testset, n=1000)
+    model.train(trainset, testset, n=100)
