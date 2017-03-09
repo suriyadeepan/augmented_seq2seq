@@ -1,4 +1,4 @@
-FILENAME = 'sequences.csv'
+FILENAME = 'sequences_full.csv'
 VOCAB_SIZE = None
 UNK = 'UNK'
 
@@ -21,7 +21,7 @@ import pickle
 
 '''
 def read_lines(filename):
-    return fix_win_encode(open(filename).read()).split('\n')[:-1]
+    return fix_win_encode(open(filename).read()).split('\n')[1:-1]
 
 def fix_win_encode(text):
     return text.replace('\x92', "'").replace('\x97', ' ').replace('\x91', '').replace('_b_','').replace('*','').replace('\x93','')
@@ -38,7 +38,7 @@ def split_row(lines):
         line = line.split('|')
         r.append(split_and_tag(line[0]))
         q.append(split_and_tag(line[-1]))
-        respect.append(line[1])
+        respect.append(int(line[1]))
     return q,r,respect
 
 
@@ -156,7 +156,8 @@ def process_data():
     metadata = {
             'w2idx' : w2idx,
             'idx2w' : idx2w,
-            'freq_dist' : freq_dist
+            'freq_dist' : freq_dist,
+            'respect_size' : max(respect) + 1
                 }
 
     # write to disk : data control dictionaries
