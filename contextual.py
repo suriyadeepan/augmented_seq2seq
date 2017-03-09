@@ -148,7 +148,7 @@ class contextual_seq2seq(object):
             losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
                                                                     labels=tf.reshape(ys_, [-1]))
             loss = tf.reduce_mean(losses)
-            train_op = tf.train.AdagradOptimizer(learning_rate=0.001).minimize(loss)
+            train_op = tf.train.AdagradOptimizer(learning_rate=0.1).minimize(loss)
             #
             # attach symbols to class
             self.loss = loss
@@ -165,7 +165,7 @@ class contextual_seq2seq(object):
         # build graph
         __graph__()
 
-    def train(self, trainset, testset, epochs=100, n=100):
+    def train(self, trainset, testset, n, epochs):
 
         print('\n>> Training begins!\n')
 
@@ -242,4 +242,4 @@ if __name__ == '__main__':
     model = contextual_seq2seq(state_size=512, vocab_size=vocab_size, 
             num_layers=3, ext_context_size=ext_context_size)
     # train
-    model.train(trainset, testset, n=1000)
+    model.train(trainset, testset, n=1000, epochs=1000000)
