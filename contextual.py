@@ -1,13 +1,15 @@
 import tensorflow as tf
 import numpy as np
 
-from datasets.twitter import data
-from datasets.twitter import data_utils
+from datasets.friends import data
+from datasets.friends import data_utils
+
+import sys
 
 class contextual_seq2seq(object):
 
     def __init__(self, state_size, vocab_size, num_layers,
-            ext_context_size,
+            ext_context_size, 
             model_name= 'contextual_seq2seq',
             ckpt_path= 'ckpt/contextual_seq2seq/'):
 
@@ -26,7 +28,7 @@ class contextual_seq2seq(object):
                                  name='ys') # decoder targets
             dec_inputs_length_ = tf.placeholder(dtype=tf.int32, shape=[None,],
                                         name='dec_inputs_length')
-            ext_context_ = tf.placeholder(dtype=tf.float32, shape=[None,ext_context_size],
+            ext_context_ = tf.placeholder(dtype=tf.int32, shape=[None,],
                                         name='ext_context') 
 
 
@@ -35,12 +37,9 @@ class contextual_seq2seq(object):
             enc_inputs = tf.nn.embedding_lookup(embs, xs_)
 
             
-            # project ext_context
-            Uc = tf.get_variable('Uc', shape=[2, num_layers, ext_context_size, state_size], 
-                                initializer=tf.contrib.layers.xavier_initializer())
-            bc = tf.get_variable('bc', shape=[2, num_layers, state_size], 
-                                 initializer=tf.constant_initializer(0.))
-            #ext_context = tf.matmul(ext_context_, M) + be
+            # embed ext_context
+            ext_ctxt_embs = tf.get_variable('ext_ctxt_emb', [ext_context_size, state_size])
+            ext_context = tf.nn.embedding_lookup(ext_ctxt_embs, ext_context_)
 
 
             # define lstm cell for encoder
@@ -100,8 +99,8 @@ class contextual_seq2seq(object):
                 next_cell_state = []
                 for layer in range(num_layers):
                     next_cell_state.append(tf.contrib.rnn.LSTMStateTuple( 
-                            c = cell_state[layer].c + tf.matmul(ext_context_, Uc[0][layer]) + bc[0][layer],
-                            h = cell_state[layer].h + tf.matmul(ext_context_, Uc[1][layer]) + bc[1][layer],
+                            c = cell_state[layer].c + ext_context,
+                            h = cell_state[layer].h + ext_context
                             ))
 
                 next_cell_state = tuple(next_cell_state)
@@ -168,18 +167,20 @@ class contextual_seq2seq(object):
 
     def train(self, trainset, testset, epochs=100, n=100):
 
+        print('\n>> Training begins!\n')
+
         def fetch_dict(datagen, keep_prob=0.5):
-            bx, by = datagen.__next__()
-            bx, by = bx.T, by.T
-            dec_lengths = (by != 0).sum(1)
-            by = by.T[:dec_lengths.max()]
-            ext_cxt = np.random.uniform(low=0.0, high=1.0, 
-                                        size=[bx.shape[0], self.ext_context_size])
+            bx, by, br = datagen.__next__()
+            while ( not (bx.shape[0] > 0 and bx.shape[1] > 0 and by.shape[0] > 0 and by.shape[1] > 0 and br.shape[0] > 0) ):
+                bx, by, br = datagen.__next__()
+
+            dec_lengths = np.full([bx.shape[0],], by.shape[1])
+
             feed_dict = { 
                     self.xs_ : bx, 
                     self.ys_ : by,
                     self.dec_inputs_length_ : dec_lengths,
-                    self.ext_context_ : ext_cxt,
+                    self.ext_context_ : br,
                     self.keep_prob_ : keep_prob
                     }
             return feed_dict
@@ -204,38 +205,41 @@ class contextual_seq2seq(object):
                             feed_dict = fetch_dict(trainset) 
                             )
                     mean_loss += l
+                    sys.stdout.write('[{}/{}]\r'.format(i,n))
 
-                print(f'>> [{j}] train loss at : {mean_loss/n}')
+                print('\n>> [{}] train loss at : {}'.format(j, mean_loss/n))
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
                 testloss = sess.run([self.loss], 
                         feed_dict = fetch_dict(testset, keep_prob=1.)
                         )
-                print(f'test loss : {testloss}')
+                print('test loss : {}'.format(testloss))
  
         except KeyboardInterrupt:
-            print(f'\n>> Interrupted by user at iteration {j}')
+            print('\n>> Interrupted by user at iteration {}'.format(j))
 
 
 if __name__ == '__main__':
     #
     # gather data
-    metadata, idx_q, idx_a = data.load_data(PATH='datasets/twitter/')
+    data_, metadata = data.load_data(PATH='datasets/friends/')
+    # split into batches
+    batches = data_utils.create_batches(data_)
     # split data
-    (trainX, trainY), (testX, testY), (validX, validY) = data_utils.split_dataset(idx_q, idx_a)
-    #
+    traindata, testdata = data_utils.split_dataset(batches)
     # prepare train set generator
-    #  set batch_size
-    batch_size = 16
-    trainset = data_utils.rand_batch_gen(trainX, trainY, batch_size)
-    testset = data_utils.rand_batch_gen(testX, testY, batch_size=1024)
+    #  
+    trainset = data_utils.rand_batch_gen(traindata)
+    testset = data_utils.rand_batch_gen(testdata)
 
     ###
     # infer vocab size
     vocab_size = len(metadata['idx2w'])
+    ext_context_size = metadata['respect_size']
     #
     # create a model
-    model = contextual_seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3, ext_context_size=20)
+    model = contextual_seq2seq(state_size=512, vocab_size=vocab_size, 
+            num_layers=3, ext_context_size=ext_context_size)
     # train
     model.train(trainset, testset, n=1000)
