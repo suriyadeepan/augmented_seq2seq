@@ -174,7 +174,7 @@ class contextual_seq2seq(object):
             while ( not (bx.shape[0] > 0 and bx.shape[1] > 0 and by.shape[0] > 0 and by.shape[1] > 0 and br.shape[0] > 0) ):
                 bx, by, br = datagen.__next__()
 
-            dec_lengths = np.full([bx.shape[0],], by.shape[1])
+            dec_lengths = np.full([bx.shape[0],], by.shape[1], dtype=np.int32)
 
             feed_dict = { 
                     self.xs_ : bx, 
