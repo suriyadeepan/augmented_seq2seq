@@ -211,10 +211,12 @@ class contextual_seq2seq(object):
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
-                testloss = sess.run([self.loss], 
-                        feed_dict = fetch_dict(testset, keep_prob=1.)
-                        )
-                print('test loss : {}'.format(testloss))
+                testloss = 0
+                for k in range(300):
+                    testloss += sess.run([self.loss], 
+                            feed_dict = fetch_dict(testset, keep_prob=1.)
+                            )
+                print('test loss : {}'.format(testloss/300)) # make this changeable
  
         except KeyboardInterrupt:
             print('\n>> Interrupted by user at iteration {}'.format(j))
