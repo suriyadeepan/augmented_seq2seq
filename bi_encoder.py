@@ -159,7 +159,7 @@ class bienc_seq2seq(object):
             losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
                                                                     labels=tf.reshape(ys_, [-1]))
             loss = tf.reduce_mean(losses)
-            train_op = tf.train.AdagradOptimizer(learning_rate=0.001).minimize(loss)
+            train_op = tf.train.AdagradOptimizer(learning_rate=0.1).minimize(loss)
             #
             # attach symbols to class
             self.loss = loss
@@ -211,10 +211,10 @@ class bienc_seq2seq(object):
                             feed_dict = fetch_dict(trainset) 
                             )
                     mean_loss += l
-                    sys.stdout.write('[{}/{}]'.format(i,n))
+                    sys.stdout.write('[{}/{}]\r'.format(i,n))
                     sys.stdout.flush()
 
-                print('>> [{j}] train loss at : {}'.format(mean_loss/n))
+                print('>> [{}] train loss at : {}'.format(j, mean_loss/n))
                 saver.save(sess, self.ckpt_path + self.model_name + '.ckpt', global_step=i)
                 #
                 # evaluate
@@ -247,4 +247,4 @@ if __name__ == '__main__':
     # create a model
     model = bienc_seq2seq(state_size=1024, vocab_size=vocab_size, num_layers=3)
     # train
-    model.train(trainset, testset, n=100)
+    model.train(trainset, testset, n=100, epochs=100000)

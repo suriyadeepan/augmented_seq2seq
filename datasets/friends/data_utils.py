@@ -44,8 +44,11 @@ def split_dataset(batches, ratio = [0.8, 0.2] ):
 
 '''
 def rand_batch_gen(dataset):
-    while True:
-        idx = randint(0, len(dataset)) # choose a random batch id
+    while True: # use try catch here; just repeat idx=.. and batch=...
+        #  why do you us try-catch? clip the idx value based on the data at hand. can't we do that?
+        #   i did that.. but not working; weird exception - out of bounds; you try fixing it then!
+        # shall I run this once?sure
+        idx = randint(0, len(dataset)-1) # choose a random batch id
         batch = dataset[idx] # fetch the batch
         bx = [bi[0] for bi in batch]
         by = [bi[1] for bi in batch]
